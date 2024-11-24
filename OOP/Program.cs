@@ -19,72 +19,130 @@ class Program
     }
 
     // In order to change the struct should sent in ref, else it not changed
-    static void ModifyPoint(ref PointStruct p)
+    static void ModifyStruct(PointStruct p)
     {
         p.x += 10;
         p.y += 10;
-        Console.WriteLine($"In Modify Struct p.x= {p.x}, p.y={p.y}");
     }
 
     static void ModifyClass(PointClass p)
     {
         p.x += 10;
         p.y += 10;
-        Console.WriteLine($"In Modify Class p.x= {p.x}, p.y={p.y}");
     }
 
-    static int counter = 0;
-    static void Recursion()
+    public static void MemoryAllocationExperiment()
     {
-        int[] arr = new int[10];
-        counter++;
-        Console.WriteLine($"Counter: {counter}");
-        Recursion();
+        long baselineMemory = GC.GetAllocatedBytesForCurrentThread();
+
+        int[] intArray = new int[1000];
+        long afterIntArray = GC.GetAllocatedBytesForCurrentThread();
+
+        double[] doubleArray = new double[1000];
+        long afterDoubleArray = GC.GetAllocatedBytesForCurrentThread();
+
+        string[] stringArray = new string[1000];
+        long afterStringArray = GC.GetAllocatedBytesForCurrentThread();
+
+        PointStruct[] structArray = new PointStruct[1000];
+        long afterStructArray = GC.GetAllocatedBytesForCurrentThread();
+
+        PointClass[] classArray = new PointClass[1000];
+        for (int i = 0; i < classArray.Length; i++)
+        {
+            classArray[i] = new PointClass { x = i };
+        }
+        long afterClassArray = GC.GetAllocatedBytesForCurrentThread();
+
+        Console.WriteLine($"Baseline Memory: {baselineMemory} bytes");
+        Console.WriteLine($"Int Array Allocation: {afterIntArray - baselineMemory} bytes");
+        Console.WriteLine($"Double Array Allocation: {afterDoubleArray - afterIntArray} bytes");
+        Console.WriteLine($"String Array Allocation: {afterStringArray - afterDoubleArray} bytes");
+        Console.WriteLine($"Struct Array Allocation: {afterStructArray - afterStringArray} bytes");
+        Console.WriteLine($"Class Array Allocation: {afterClassArray - afterStructArray} bytes");
     }
 
-    static void MeasureMemoryStruct()
+    static int RecursiveMethod(int depth, int localArraySize)
     {
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        PointStruct[] arr = new PointStruct[200];
-        long after = GC.GetAllocatedBytesForCurrentThread();
-
-        Console.WriteLine($"Memory: {before} - {after} = {after - before}");
+        // TODO: Implement a recursive method that:
+        // 1. Creates a local byte array of specified size
+        byte[] localArray = new byte[localArraySize];
+        // משתנים מקומיים נוספים
+        int localVariable1 = 0;
+        int localVariable2 = 0;
+        // 2. Prints current recursion depth
+        Console.WriteLine($"Current depth: {depth}");
+        // 3. Recursively calls itself, incrementing depth
+        try
+        {
+            return RecursiveMethod(depth + 1, localArraySize);
+        }
+        catch (StackOverflowException)
+        {
+            return depth;
+        }
     }
 
-    static void MeasureMemoryClass()
+    static int[] ExpandArray(int[] array)
     {
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        PointClass[] arr = new PointClass[200];
-        long after = GC.GetAllocatedBytesForCurrentThread();
-
-        Console.WriteLine($"Memory: {before} - {after} = {after - before}");
+        int[] oldArray = array;
+        array = new int[oldArray.Length * 2];
+        for (int i = 0; i < oldArray.Length; i++)
+        {
+            array[i] = oldArray[i];
+            array[i + oldArray.Length] = oldArray[i];
+        }
+        return array;
     }
 
-    public static void ModifyArray(int[] arr)
-    {
-        arr[0] = 999; //Modify original array
-        arr = arr = new int[] { 10, 20, 30 }; // only modifies local reference
-    }
-  
     static void Main(string[] args)
     {
-        Console.WriteLine("Hello, World!");
+        #region Lesson 1
+        // Ex 1
+        PointStruct pointStruct = new PointStruct { x = 10, y = 20 };
+        Console.WriteLine($"Before ModifyStruct: X={pointStruct.x}, Y={pointStruct.y}");
+        ModifyStruct(pointStruct);
+        Console.WriteLine($"After ModifyStruct: X={pointStruct.x}, Y={pointStruct.y}");
 
-        PointStruct p = new PointStruct { x = 10, y = 20 };
-        ModifyPoint(ref p);
-        Console.WriteLine($"p.x= {p.x}, p.y={p.y}");
+        PointClass pointClass = new PointClass { x = 10, y = 20 };
+        Console.WriteLine($"Before ModifyClass: X={pointClass.x}, Y={pointClass.y}");
+        ModifyClass(pointClass);
+        Console.WriteLine($"After ModifyClass: X={pointClass.x}, Y={pointClass.y}");
 
-        PointClass p2 = new PointClass { x = 10, y = 20 };
-        ModifyClass(p2);
-        Console.WriteLine($"Class p.x= {p2.x}, p.y={p2.y}");
+        //Ex 2
+        int[] arraySizes = { 100, 1000, 10000 };
+        foreach (int size in arraySizes)
+        {
+            Console.WriteLine($"\nExperiment with local array size: {size} bytes");
+            try
+            {
+                int maxDepth = RecursiveMethod(0, 10000);
+                Console.WriteLine($"Maximum recursion depth: {maxDepth}");
+            }
+            catch (StackOverflowException)
+            {
+                Console.WriteLine("Stack overflow occurred!");
+            }
+        }
 
-        //Recursion();
-        MeasureMemoryStruct();
-        MeasureMemoryClass();
+        // Ex 3
+        MemoryAllocationExperiment();
 
-        int[] arr = new int[] { 1, 2, 3, 4 };
-        Console.WriteLine(string.Join(",", arr));
-        ModifyArray(arr);
-        Console.WriteLine(string.Join(",", arr));
+        // Ex 4
+        int[] a = { 1, 2, 3 };
+        for (int i = 0; i < a.Length; i++)
+        {
+            Console.WriteLine(a[i]);
+        }
+        a = ExpandArray(a);
+        Console.WriteLine();
+        for (int i = 0; i < a.Length; i++)
+        {
+            Console.WriteLine(a[i]);
+        }
     }
+    #endregion
+
+
 }
+
